@@ -19,12 +19,12 @@ func getArgonConfig() *PasswordConfig {
 	}
 }
 
-func (u *User) generatePasswordHash(c *PasswordConfig) (string, error) {
-
+func (u *User) hashUserPassword() error {
+	c := getArgonConfig()
 	// Generate a Salt
 	salt := make([]byte, 16)
 	if _, err := rand.Read(salt); err != nil {
-		return "", err
+		return err
 	}
 
 	hash := argon2.IDKey([]byte(u.Password), salt, c.time, c.memory, c.threads, c.keyLen)
@@ -34,11 +34,11 @@ func (u *User) generatePasswordHash(c *PasswordConfig) (string, error) {
 	b64Hash := base64.RawStdEncoding.EncodeToString(hash)
 
 	format := "$argon2id$v=%d$m=%d,t=%d,p=%d$%s$%s"
-	full := fmt.Sprintf(format, argon2.Version, c.memory, c.time, c.threads, b64Salt, b64Hash)
-	return full, nil
+	u.Password = fmt.Sprintf(format, argon2.Version, c.memory, c.time, c.threads, b64Salt, b64Hash)
+	return nil
 }
 
-func (u *User) verifyPassword(password string) (bool, error) {
+func (u *User) VerifyPassword(password string) (bool, error) {
 
 	parts := strings.Split(u.Password, "$")
 
